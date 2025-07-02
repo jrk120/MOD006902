@@ -1,4 +1,0 @@
-Metric - EPA 
-Features - plays.offenseFormation, plays.recieverAlignment, plays.pff_passCoverage, plays.pff_manZone, calculated.avg_safety_depth, calculated.Pre_snap_motion_defence, calculated.Pre_snap_motion_offence, calculated.single_high
-
-change dtypes to be more efficient
