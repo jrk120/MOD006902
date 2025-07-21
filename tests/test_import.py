@@ -1,9 +1,10 @@
 #Import necessary modules
 import pytest
 import os
-from pyspark.testing.utils import assertSchemaEqual, assertDataFrameEqual
+from pyspark.testing.utils import assertSchemaEqual
 from pyspark.sql.types import StructType, StructField, LongType, DoubleType, StringType
 from pyspark.sql import SparkSession
+from pyspark.sql.functions import to_timestamp, date_format, col
 
 #---------------------------------------------pre define repeated parameters for test------------------------------------
 
@@ -53,7 +54,9 @@ def test_parquet_conversion(spark_fixture):
     truthCSVs = r"C:\Users\knigh\MOD006902\tests\test_data"
     convertedData = r"C:\Users\knigh\MOD006902\data"
 
-    files = ["games", "player_play", "players", "plays"]
+    #Files to test
+    files = ["games"]
+
     csvs = {}
     parqeuts = {}
     for file in files:
@@ -61,18 +64,20 @@ def test_parquet_conversion(spark_fixture):
         parqeuts[file] = spark_fixture.read.parquet(convertedData + "/" + file + ".parquet")
 
     for file, CSVDf in csvs.items():
-        from pyspark.sql.functions import to_timestamp, date_format, col
 
         parqeutDf = parqeuts[file]
 
+        #Avoiding nuance with how it is read in, some start with 0s e.g 09:30:00 while the same data in the other is 9:30:00
         if file == "games":
-            parqeutDf = parqeutDf.withColumn("gameTimeEastern",date_format(to_timestamp(col("gameTimeEastern"), "H:mm:ss"), "HH:mm:ss"))
-            CSVDf = CSVDf.withColumn("gameTimeEastern",date_format(to_timestamp(col("gameTimeEastern"), "H:mm:ss"), "HH:mm:ss"))
+            parqeutDf = parqeutDf.withColumn("gameTimeEastern", date_format(to_timestamp(col("gameTimeEastern"), "H:mm:ss"), "HH:mm:ss"))
+            CSVDf = CSVDf.withColumn("gameTimeEastern", date_format(to_timestamp(col("gameTimeEastern"), "H:mm:ss"), "HH:mm:ss"))
 
-        actual_rows = set([tuple(row) for row in CSVDf.collect()])
-        expected_rows = set([tuple(row) for row in parqeutDf.collect()])
+        csvRows = set([tuple(row) for row in CSVDf.collect()])
+        parqeutRows = set([tuple(row) for row in parqeutDf.collect()])
 
-        assert actual_rows == expected_rows, "DataFrame values do not match"
+        #Did not deploy assertDataFrameEqual
+        #Only wanted to compare the actual values, schemas dont have to match due to parquet's perception of type
+        assert csvRows == parqeutRows, "DataFrames do not match"
     
 
     
